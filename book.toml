@@ -1,0 +1,10 @@
+[book]
+title = "GBA From Scratch: Rust Edition"
+authors = ["Lokathor"]
+language = "en"
+multilingual = false
+src = "book_src"
+
+[build]
+build-dir = "target/book_out"
+create-missing = false

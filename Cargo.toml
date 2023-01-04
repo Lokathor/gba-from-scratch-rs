@@ -1,0 +1,12 @@
+[package]
+name = "gba-from-scratch-rs"
+version = "0.1.0"
+edition = "2021"
+license = "Zlib OR Apache-2.0 OR MIT"
+
+[profile.dev]
+opt-level = 3
+incremental = false
+
+[profile.dev.package."*"]
+debug-assertions = false
