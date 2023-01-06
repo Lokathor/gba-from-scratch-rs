@@ -26,6 +26,9 @@ but any similar introduction to the language should suffice.
 We will definitely be using many advanced features of Rust to get things done,
 but those parts I will explain as we go.
 
+Also, a general familiarity with using command line tools is probably a good idea,
+but if you're familiar with `cargo` then you probably know enough to get started.
+
 ## License
 
 This book is available under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/) license.
