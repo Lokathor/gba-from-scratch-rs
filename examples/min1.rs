@@ -15,3 +15,8 @@ unsafe extern "C" fn __start() -> ! {
     options(noreturn)
   }
 }
+
+#[panic_handler]
+fn handle_panic(_: &core::panic::PanicInfo) -> ! {
+  loop {}
+}
