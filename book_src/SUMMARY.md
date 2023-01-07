@@ -1,4 +1,7 @@
 
 [Introduction](introduction.md)
 
-* [Minimum Project Setup](01-minimal-setup.md)
+* [Initial Setup](initial-setup/index.md)
+  * [Project Configuration](initial-setup/project-config.md)
+  * [A Minimal Example](initial-setup/minimal-example.md)
+  * [Calling `main`](initial-setup/calling-main.md)

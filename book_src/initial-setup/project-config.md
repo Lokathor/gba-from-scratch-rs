@@ -1,18 +1,9 @@
-# Minimal Setup
 
-To start out let's do the minimal setup required to just make a rom that can run without crashing the emulator or the hardware.
+# Project Configuration
 
-On top of a basic `cargo init` to make a new project, we'll need a few other steps of setup.
+We'll need to have a few more files than just a `cargo init` gives us.
 
-## ARM Binutils
-
-todo
-
-## Nightly Rust, and `rust-src`
-
-todo
-
-## Cargo Configuration
+## `.cargo/config.toml`
 
 First we'll need to configure `cargo` itself a little bit.
 We have to make a `.cargo/` folder at the project root, and put a `config.toml` inside.
@@ -58,44 +49,12 @@ In this case, `-Clink-arg=` defines something that's passed to the linker, and `
 The linker script tells the linker how to create a binary after all the code is compiled.
 It's a complicated enough subject that it'll get its own subsection.
 
-## The Linker Script
+## `Cargo.toml`
 
-todo
-
-## Our First Rust File
-
-```rust
-#![no_std]
-#![no_main]
-#![feature(naked_functions)]
-
-#[naked]
-#[no_mangle]
-#[instruction_set(arm::a32)]
-#[link_section = ".text.gba_rom_header"]
-unsafe extern "C" fn __start() -> ! {
-  core::arch::asm! {
-    "b 1f",
-    ".space 0xE0",
-    "1:",
-    "b 1b",
-    options(noreturn)
-  }
-}
-
-#[panic_handler]
-fn handle_panic(_: &core::panic::PanicInfo) -> ! {
-  loop {}
-}
-```
-
-todo
-
-## Building an ELF and Fixing a ROM
-
-todo
-
-## Customize The Build Profile
+Next, we'll want to tune the `dev` build profile a bit.
+This is what's used for "debug" builds.
+We need to turn the optimization all the way on even for our debug builds, because the GBA has a very slow CPU compared to what a Desktop does.
+We'll also turn off debug-assertions for packages we depend on, which doesn't affect `core`, but does affect 
 
 ```toml
 [profile.dev]
@@ -106,38 +65,6 @@ incremental = false
 debug-assertions = false
 ```
 
-## Our Second Rust File
+## `linker_scripts/mono_boot.ld`
 
-```rust
-#![no_std]
-#![no_main]
-#![feature(naked_functions)]
-
-#[naked]
-#[no_mangle]
-#[instruction_set(arm::a32)]
-#[link_section = ".text.gba_rom_header"]
-unsafe extern "C" fn __start() -> ! {
-  core::arch::asm! {
-    "b 1f",
-    ".space 0xE0",
-    "1:",
-    "ldr r0, =main",
-    "bx r0",
-    options(noreturn)
-  }
-}
-
-#[no_mangle]
-extern "C" fn main() -> ! {
-  unsafe {
-    (0x0400_0000 as *mut u16).write_volatile(0);
-  }
-  loop {}
-}
-
-#[panic_handler]
-fn handle_panic(_: &core::panic::PanicInfo) -> ! {
-  loop {}
-}
-```
+todo
