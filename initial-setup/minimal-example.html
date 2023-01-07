@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - GBA From Scratch With Rust</title>
+        <title>A Minimal Example - GBA From Scratch With Rust</title>
 
 
         <!-- Custom HTML head -->
@@ -12,21 +12,21 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -34,7 +34,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html" class="active">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/project-config.html"><strong aria-hidden="true">1.1.</strong> Project Configuration</a></li><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.2.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="initial-setup/calling-main.html"><strong aria-hidden="true">1.3.</strong> Calling main</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../initial-setup/project-config.html"><strong aria-hidden="true">1.1.</strong> Project Configuration</a></li><li class="chapter-item expanded "><a href="../initial-setup/minimal-example.html" class="active"><strong aria-hidden="true">1.2.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="../initial-setup/calling-main.html"><strong aria-hidden="true">1.3.</strong> Calling main</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -112,7 +112,7 @@
                     <h1 class="menu-title">GBA From Scratch With Rust</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -141,43 +141,44 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>Welcome to <em>GBA From Scratch With Rust</em>.</p>
-<p>It's a book about programming for the Game Boy Advance using the Rust programming langauge.
-Particularly, everything will be as &quot;from scratch&quot; as possible.
-This means that we'll use the <code>core</code> part of the standard library,
-but for all other code it'll be stuff we've covered how to make in the book.</p>
-<p>If you want to write 20 lines of code to call a few library functions and have a working Pong clone, this book is <strong>NOT</strong> for you.
-This is <em>not</em> the quick path to having a completed game.
-This is the much slower path of learning how all the things are happening under the hood.
-If that kind of thing sounds like fun, then this book is probably for you.</p>
-<p>Doing things from scratch is <em>not</em> a time-efficient way to complete a project,
-but it is a pretty good way to learn about all the layers that go into something.</p>
-<h2 id="expected-background"><a class="header" href="#expected-background">Expected Background</a></h2>
-<p>The primary expected background for reading is book is a basic understanding of the Rust language itself.
-You'll also need to be familiar with using <code>cargo</code> based projects, which most every Rust programmer already is.
-The usual way to learn Rust is by reading <a href="https://doc.rust-lang.org/book/">The Rust Programming Language</a>,
-but any similar introduction to the language should suffice.</p>
-<p>We will definitely be using many advanced features of Rust to get things done,
-but those parts I will explain as we go.</p>
-<p>Also, a general familiarity with using command line tools is probably a good idea,
-but if you're familiar with <code>cargo</code> then you probably know enough to get started.</p>
-<h2 id="license"><a class="header" href="#license">License</a></h2>
-<p>This book is available under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International</a> license.
-Also known as &quot;CC BY-NC-SA 4.0&quot;, for short.
-In simple terms it means that you can redistribute this book (with or without changes) as long as you give credit,
-as long as it's not for commercial purposes,
-and as long as you don't change the license.
-If you need more details you can follow the link and read the full text of the license.</p>
-<h2 id="support"><a class="header" href="#support">Support</a></h2>
-<p>If you'd like to support the book you can sign up to be a <a href="https://github.com/sponsors/Lokathor">Github Sponsor</a>.</p>
+                        <h1 id="minimal-example"><a class="header" href="#minimal-example">Minimal Example</a></h1>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![no_std]
+#![no_main]
+#![feature(naked_functions)]
+
+<span class="boring">fn main() {
+</span>#[naked]
+#[no_mangle]
+#[instruction_set(arm::a32)]
+#[link_section = &quot;.text.gba_rom_header&quot;]
+unsafe extern &quot;C&quot; fn __start() -&gt; ! {
+  core::arch::asm! {
+    &quot;b 1f&quot;,
+    &quot;.space 0xE0&quot;,
+    &quot;1:&quot;,
+    &quot;b 1b&quot;,
+    options(noreturn)
+  }
+}
+
+#[panic_handler]
+fn handle_panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
+  loop {}
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="building-an-elf-and-fixing-a-rom"><a class="header" href="#building-an-elf-and-fixing-a-rom">Building an ELF and Fixing a ROM</a></h2>
+<p>todo</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../initial-setup/project-config.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
-                            <a rel="next" href="initial-setup/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../initial-setup/calling-main.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -187,8 +188,11 @@ If you need more details you can follow the link and read the full text of the l
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../initial-setup/project-config.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
-                    <a rel="next" href="initial-setup/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../initial-setup/calling-main.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -203,13 +207,13 @@ If you need more details you can follow the link and read the full text of the l
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 
