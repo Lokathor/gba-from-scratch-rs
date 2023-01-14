@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../initial-setup/index.html" class="active"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../initial-setup/project-config.html"><strong aria-hidden="true">1.1.</strong> Project Configuration</a></li><li class="chapter-item expanded "><a href="../initial-setup/minimal-example.html"><strong aria-hidden="true">1.2.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="../initial-setup/calling-main.html"><strong aria-hidden="true">1.3.</strong> Calling main</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../initial-setup/index.html" class="active"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="../initial-setup/calling-main.html"><strong aria-hidden="true">1.2.</strong> Calling main</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -146,7 +146,7 @@
 <p>If you want to make an apple pie from scratch, you must first invent the universe.</p>
 </blockquote>
 <p>In other words, we've got a lot of setup ahead of us.</p>
-<h2 id="system-tooling-setup"><a class="header" href="#system-tooling-setup">System Tooling Setup</a></h2>
+<h1 id="system-tooling-setup"><a class="header" href="#system-tooling-setup">System Tooling Setup</a></h1>
 <p>Separately from setting up a specific project's configuration, you'll need to do a few &quot;one time&quot; things to make your machine ready.</p>
 <p>First of all, we'll need to be using the Nightly rust compiler, because we'll be using a lot of unstable features.</p>
 <p>Next, we'll need to have the <code>rust-src</code> rustup component available, because we'll have to build our own copy of the standard library.</p>
@@ -159,8 +159,10 @@ We want a set of binutils for <code>arm-none-eabi</code>.</p>
 rustup component add rust-src
 sudo apt-get install -y binutils-arm-none-eabi
 </code></pre>
+<p>The <code>rust-src</code> component will be specific to Nightly or Stable, so be sure to set Nightly before installing it.
+Otherwise you'll just have to install it a second time after setting Nightly for use.</p>
 <p>The rustup commands should work just as well on Windows and Mac.
-If you're on a Linux that isn't ubuntu then the binutils package could be under some other name.</p>
+If you're on a Linux that isn't Ubuntu then the binutils package could be under some other name.</p>
 <p><strong>Note:</strong> <code>rustup default nightly</code> is a global command and will affect all your rust stuff.
 If you want to sets nightly for <em>only</em> your GBA project the consider a <a href="https://rust-lang.github.io/rustup/overrides.html?#the-toolchain-file">toolchain file</a> instead.</p>
 <p>We'll also need a tool called <code>gbafix</code>, which can patch up the ROM's header data.
@@ -168,6 +170,70 @@ There's a <a href="https://github.com/devkitPro/gba-tools">C version</a> of that
 but there's also a rust one too, and you can just get the Rust version via <code>cargo install</code>.</p>
 <pre><code class="language-sh">cargo install gbafix
 </code></pre>
+<h1 id="project-configuration"><a class="header" href="#project-configuration">Project Configuration</a></h1>
+<p>In addition to the system level setup, we'll want to set a few project configuration files before we begin working on the actual code.</p>
+<h2 id="cargotoml"><a class="header" href="#cargotoml"><code>Cargo.toml</code></a></h2>
+<p>Running the usual <code>cargo init</code> will make a default <code>Cargo.toml</code> file.
+This is mostly fine, but I strongly suggest that we alter the &quot;dev&quot; build profile slightly.
+The dev profile is what's used for debug builds.
+Normally the dev profile is set for a low level of optimization and using incremental building.
+This lets debug builds complete quickly, though the resulting programs run an order of magnitude (or more) slower than a release build.
+The GBA has a very weak CPU, so taking such a performance hit, even just in debug builds, is very bad for us.</p>
+<p>We want to turn the <code>opt-level</code> up to 3, and turn <code>incremental</code> off.</p>
+<p>Also, we can use a package override to turn <code>debug-assertions</code> off in our dependencies.
+We won't have any normal dependencies, but we'll be using the <code>build-std</code> nightly feature of <code>cargo</code>.
+When <code>cargo</code> builds the standard library it'll pull in <code>compiler_builtins</code>, and we want that to avoid those debug asserts.</p>
+<pre><code class="language-toml">[profile.dev]
+opt-level = 3
+incremental = false
+
+[profile.dev.package.&quot;*&quot;]
+debug-assertions = false
+</code></pre>
+<h2 id="cargoconfigtoml"><a class="header" href="#cargoconfigtoml"><code>.cargo/config.toml</code></a></h2>
+<p>In our project folder make a <code>.cargo/</code> folder, then make a <code>cargo.toml</code> file inside.
+This lets us change a few more cargo defaults so that we don't need to pass as many command line arguments all the time.</p>
+<p>First of all, our default target for all of our builds will be <code>thumbv4t-none-eabi</code>.
+There's two targets built in to <code>rustc</code> that could work on the GBA:</p>
+<ul>
+<li><code>thumbv4t-none-eabi</code> produces &quot;thumb code&quot; by default</li>
+<li><code>armv4t-none-eabi</code> produces &quot;arm code&quot; by default</li>
+</ul>
+<p>We'll cover the thumb/arm differences later,
+for now just know that we'll want a majority of our code to be thumb code so we'll be building with <code>thumbv4t-none-eabi</code>.
+We can set this with <code>--target=thumbv4t-none-eabi</code>, but we can also use a <code>[build]</code> entry.</p>
+<pre><code class="language-toml">[build]
+target = &quot;thumbv4t-none-eabi&quot;
+</code></pre>
+<p>The thing is, there's no standard library shipped for this target, it's only &quot;<a href="https://doc.rust-lang.org/rustc/target-tier-policy.html">Tier 3</a>&quot;.
+This isn't a very big problem, because a Nightly feature of <code>cargo</code> lets us build it ourselves.
+It makes a fresh project build take an extra few seconds, but that's it.
+We could do this with <code>-Zbuild-std=core</code>, or we can use an <code>[unstable]</code> entry.</p>
+<pre><code class="language-toml">[unstable]
+build-std = [&quot;core&quot;]
+</code></pre>
+<p>Last up is that we want to set some per-target details.
+With a <code>runner</code> we can name a program that will run our programs.
+This is designed to support emulators and simulators and the like, which is exactly what we want.
+My GBA emulator of choice is <a href="https://mgba.io/">mGBA</a>, and <code>0.10</code> is the latest version of mGBA as I write this.
+On Linux and Mac you'll get two executables: <code>mgba</code> will have no GUI controls, and <code>mgba-qt</code> will have GUI controls.
+On Windows there's just one executable: <code>mgba.exe</code>.
+Personally, on my Windows machine I just made a copy of <code>mgba.exe</code> called <code>mgba-qt.exe</code>.
+Then I didn't have to worry about the per-OS difference, I just set the runner as &quot;mgba-qt&quot; and it works.</p>
+<p>In addition to the <code>runner</code>, we need to set some special <code>rustflags</code>.
+There's a special argument we need to pass to the linker.
+We do this with <code>-Clink-arg=</code>, followed by the argument.
+The linker argument itself that we need to pass will be to set the linker script.
+We do this with <code>-T</code>, followed by the script's filename.
+I'm going to suggest having a folder called <code>linker_scripts/</code>, and then a script called <code>mono_boot.ld</code>.
+That means that our <code>[target.thumbv4t-none-eabi]</code> entry will look like this</p>
+<pre><code class="language-toml">[target.thumbv4t-none-eabi]
+runner = &quot;mgba-qt&quot;
+rustflags = [&quot;-Clink-arg=-Tlinker_scripts/mono_boot.ld&quot;]
+</code></pre>
+<p>The linker script file itself is complicated enough to deserve its own sub-header.</p>
+<h2 id="linker_scriptsmono_bootld"><a class="header" href="#linker_scriptsmono_bootld"><code>linker_scripts/mono_boot.ld</code></a></h2>
+<p>todo</p>
 
                     </main>
 
@@ -177,7 +243,7 @@ but there's also a rust one too, and you can just get the Rust version via <code
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next" href="../initial-setup/project-config.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../initial-setup/minimal-example.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -191,7 +257,7 @@ but there's also a rust one too, and you can just get the Rust version via <code
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next" href="../initial-setup/project-config.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../initial-setup/minimal-example.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
