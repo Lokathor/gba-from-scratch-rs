@@ -215,11 +215,12 @@ build-std = [&quot;core&quot;]
 <p>Last up is that we want to set some per-target details.
 With a <code>runner</code> we can name a program that will run our programs.
 This is designed to support emulators and simulators and the like, which is exactly what we want.
-My GBA emulator of choice is <a href="https://mgba.io/">mGBA</a>, and <code>0.10</code> is the latest version of mGBA as I write this.
-On Linux and Mac you'll get two executables: <code>mgba</code> will have no GUI controls, and <code>mgba-qt</code> will have GUI controls.
+My GBA emulator of choice is <a href="https://mgba.io/">mGBA</a> because it supports running ELF files directly.
+This greatly simplifies the process of running our game in the emulator during development.
+We set mGBA as the <code>runner</code>, then <code>cargo</code> passes our ELF formatted executable as an arg to mGBA, and things will &quot;just work&quot;.
+On Linux and Mac you'll get two executables when you install mGBA: <code>mgba</code> will have no GUI controls, and <code>mgba-qt</code> will have GUI controls.
 On Windows there's just one executable: <code>mgba.exe</code>.
-Personally, on my Windows machine I just made a copy of <code>mgba.exe</code> called <code>mgba-qt.exe</code>.
-Then I didn't have to worry about the per-OS difference, I just set the runner as &quot;mgba-qt&quot; and it works.</p>
+Personally, on my Windows machine I just made a copy of <code>mgba.exe</code> called <code>mgba-qt.exe</code> so that &quot;mgba-qt&quot; works all the time.</p>
 <p>In addition to the <code>runner</code>, we need to set some special <code>rustflags</code>.
 There's a special argument we need to pass to the linker.
 We do this with <code>-Clink-arg=</code>, followed by the argument.
