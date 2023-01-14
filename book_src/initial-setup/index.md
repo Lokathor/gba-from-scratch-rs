@@ -104,11 +104,12 @@ build-std = ["core"]
 Last up is that we want to set some per-target details.
 With a `runner` we can name a program that will run our programs.
 This is designed to support emulators and simulators and the like, which is exactly what we want.
-My GBA emulator of choice is [mGBA](https://mgba.io/), and `0.10` is the latest version of mGBA as I write this.
-On Linux and Mac you'll get two executables: `mgba` will have no GUI controls, and `mgba-qt` will have GUI controls.
+My GBA emulator of choice is [mGBA](https://mgba.io/) because it supports running ELF files directly.
+This greatly simplifies the process of running our game in the emulator during development.
+We set mGBA as the `runner`, then `cargo` passes our ELF formatted executable as an arg to mGBA, and things will "just work".
+On Linux and Mac you'll get two executables when you install mGBA: `mgba` will have no GUI controls, and `mgba-qt` will have GUI controls.
 On Windows there's just one executable: `mgba.exe`.
-Personally, on my Windows machine I just made a copy of `mgba.exe` called `mgba-qt.exe`.
-Then I didn't have to worry about the per-OS difference, I just set the runner as "mgba-qt" and it works.
+Personally, on my Windows machine I just made a copy of `mgba.exe` called `mgba-qt.exe` so that "mgba-qt" works all the time.
 
 In addition to the `runner`, we need to set some special `rustflags`.
 There's a special argument we need to pass to the linker.
