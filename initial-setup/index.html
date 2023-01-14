@@ -234,7 +234,41 @@ rustflags = [&quot;-Clink-arg=-Tlinker_scripts/mono_boot.ld&quot;]
 </code></pre>
 <p>The linker script file itself is complicated enough to deserve its own sub-header.</p>
 <h2 id="linker_scriptsmono_bootld"><a class="header" href="#linker_scriptsmono_bootld"><code>linker_scripts/mono_boot.ld</code></a></h2>
-<p>todo</p>
+<p>In a folder called <code>linker_sctipts/</code> we want a file called <code>mono_boot.ld</code>.
+This is a configuration file for the linker.</p>
+<p>You're probably used to hearing about the compiler compiling your code.
+Actually there's one other very important step.
+The compiler makes one or more &quot;object files&quot;.
+Once all the object files are created the linker is called and it &quot;links&quot; those object files into the actual executable file.
+The linker program is generally called <code>ld</code>, and newer linkers usually have a close name such as <code>lld</code>, <code>gold</code>, <code>mold</code>, etc.
+The &quot;ld&quot; is short for, and I wish I were making this up, &quot;Link eDitor&quot;.</p>
+<p>We'll be using the linker from the ARM binutils.
+It has a <a href="https://sourceware.org/binutils/docs/ld/">sizable manual</a> that you can read yourself if you want.
+Linker scripts <em>can</em> get quite complex, but we will have a fairly simple script.
+We will also use just one linker script for most of this project.</p>
+<p>The script is called <code>mono_boot.ld</code> because it's intended to work with the GBA's normal boot process where there's one cartridge per GBA.
+It is also possible to make &quot;multiboot&quot; ROMs, which let one GBA send code to several others via the link cable, so everyone can play a game off of just one cartridge.
+That's neat, but the downside is that all code and data for the download players has to fit into RAM only, which isn't much space at all.
+We'll be sticking to making just normal ROMs for almost everything we make here, but might cover how to do multiboot eventually.</p>
+<p>The linker script itself comes in three parts: Entry, Memory, and Sections.</p>
+<pre><code class="language-ld">ENTRY(__start)
+</code></pre>
+<p>The &quot;entry&quot; is the name of the function execution should start at when the program begins.
+The linker will store the address of the entry function we pick in the &quot;entry point&quot; part of the program's metadata when we compile an executable.
+This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't care.
+However, when we emulate the program in mGBA it will expect a &quot;normal&quot; entry point address and reject our program otherwise.
+Right now we'll pick the name <code>__start</code> as the entry point function (that's the conventional name to use), and then later on we'll use other steps to make sure the <code>__start</code> function ends up where we want.</p>
+<pre><code class="language-ld">MEMORY {
+  ewram (w!x) : ORIGIN = 0x2000000, LENGTH = 256K
+  iwram (w!x) : ORIGIN = 0x3000000, LENGTH = 32K
+  rom (rx)    : ORIGIN = 0x8000000, LENGTH = 32M
+}
+</code></pre>
+<p>The next part tells the linker what the available memory of the GBA is like.
+The names for each region are up to us.
+We also specify if the memory is readable, writable, and/or executable, but that only actually matters if our &quot;sections&quot; data doesn't cover something and the linker has to decide for itself where to put something.
+Importantly we give the base address of each memory region, as well as how many bytes big that region is.
+The amount of memory in the region is important so that the linker will report an error if we try to fit too much data into a particular region.</p>
 
                     </main>
 
