@@ -38,6 +38,6 @@ as long as it's not for commercial purposes,
 and as long as you don't change the license.
 If you need more details you can follow the link and read the full text of the license.
 
-## Support
+## Support The Project
 
 If you'd like to support the book you can sign up to be a [Github Sponsor](https://github.com/sponsors/Lokathor).
