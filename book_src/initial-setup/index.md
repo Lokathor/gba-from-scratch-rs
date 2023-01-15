@@ -149,29 +149,35 @@ It is also possible to make "multiboot" ROMs, which let one GBA send code to sev
 That's neat, but the downside is that all code and data for the download players has to fit into RAM only, which isn't much space at all.
 We'll be sticking to making just normal ROMs for almost everything we make here, but might cover how to do multiboot eventually.
 
-The linker script itself comes in three parts: Entry, Memory, and Sections.
+The actual content of the linker script is long enough that I won't paste it all in here.
+Just get it out of the github repo: [mono_boot.ld](https://github.com/Lokathor/gba-from-scratch-rs/blob/main/linker_scripts/mono_boot.ld)
+It's not essential that you fully understand everything about it, since you generally won't need to reconfigure the linker script.
+That said, we'll briefly touch on each part of what it does.
 
-```ld
-ENTRY(__start)
-```
+### How The Linker Works
 
-The "entry" is the name of the function execution should start at when the program begins.
-The linker will store the address of the entry function we pick in the "entry point" part of the program's metadata when we compile an executable.
-This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't care.
-However, when we emulate the program in mGBA it will expect a "normal" entry point address and reject our program otherwise.
-Right now we'll pick the name `__start` as the entry point function (that's the conventional name to use), and then later on we'll use other steps to make sure the `__start` function ends up where we want.
+todo
 
-```ld
-MEMORY {
-  ewram (w!x) : ORIGIN = 0x2000000, LENGTH = 256K
-  iwram (w!x) : ORIGIN = 0x3000000, LENGTH = 32K
-  rom (rx)    : ORIGIN = 0x8000000, LENGTH = 32M
-}
-```
+### Entry
 
-The next part tells the linker what the available memory of the GBA is like.
-The names for each region are up to us.
-We also specify if the memory is readable, writable, and/or executable, but that only actually matters if our "sections" data doesn't cover something and the linker has to decide for itself where to put something.
-Importantly we give the base address of each memory region, as well as how many bytes big that region is.
-The amount of memory in the region is important so that the linker will report an error if we try to fit too much data into a particular region.
+The [Entry](https://sourceware.org/binutils/docs/ld/Entry-Point.html) is the name of the function execution should start at when the program begins.
+The linker will store the address of the entry function we pick in the `e_entry` field of the program's ELF metadata when we compile an executable.
 
+This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't even use the ELF format.
+However, when we emulate the program in mGBA it will expect `e_entry` to be one of several possible addresses, and it rejects our program otherwise.
+Right now we'll pick the name `__start` as the entry point function, and then later on we'll use other steps to make sure the `__start` function ends up where we want.
+The name `__start` is just a conventional name to use, you could potentially use some other name if you really wanted to.
+
+### Memory
+
+The [Memory](https://sourceware.org/binutils/docs/ld/MEMORY.html) description tells the linker what the available memory of the GBA is like.
+The names for each region are up to us, they just need to match the same names in out Sections description.
+For each region we specify if the memory is readable, writable, and/or executable.
+This affects where stuff is placed if none of the Sections rules covers an input section.
+Also we give the base address of each memory region, as well as how many bytes big that region is.
+The address allows the linker to hardcode the jumps from point to point within the program.
+The size allows the linker to report an error if we put too much into a single memory region.
+
+### Sections
+
+Finally, the [Sections](https://sourceware.org/binutils/docs/ld/SECTIONS.html) information is the longest part of the file.
