@@ -250,25 +250,29 @@ We will also use just one linker script for most of this project.</p>
 It is also possible to make &quot;multiboot&quot; ROMs, which let one GBA send code to several others via the link cable, so everyone can play a game off of just one cartridge.
 That's neat, but the downside is that all code and data for the download players has to fit into RAM only, which isn't much space at all.
 We'll be sticking to making just normal ROMs for almost everything we make here, but might cover how to do multiboot eventually.</p>
-<p>The linker script itself comes in three parts: Entry, Memory, and Sections.</p>
-<pre><code class="language-ld">ENTRY(__start)
-</code></pre>
-<p>The &quot;entry&quot; is the name of the function execution should start at when the program begins.
-The linker will store the address of the entry function we pick in the &quot;entry point&quot; part of the program's metadata when we compile an executable.
-This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't care.
-However, when we emulate the program in mGBA it will expect a &quot;normal&quot; entry point address and reject our program otherwise.
-Right now we'll pick the name <code>__start</code> as the entry point function (that's the conventional name to use), and then later on we'll use other steps to make sure the <code>__start</code> function ends up where we want.</p>
-<pre><code class="language-ld">MEMORY {
-  ewram (w!x) : ORIGIN = 0x2000000, LENGTH = 256K
-  iwram (w!x) : ORIGIN = 0x3000000, LENGTH = 32K
-  rom (rx)    : ORIGIN = 0x8000000, LENGTH = 32M
-}
-</code></pre>
-<p>The next part tells the linker what the available memory of the GBA is like.
-The names for each region are up to us.
-We also specify if the memory is readable, writable, and/or executable, but that only actually matters if our &quot;sections&quot; data doesn't cover something and the linker has to decide for itself where to put something.
-Importantly we give the base address of each memory region, as well as how many bytes big that region is.
-The amount of memory in the region is important so that the linker will report an error if we try to fit too much data into a particular region.</p>
+<p>The actual content of the linker script is long enough that I won't paste it all in here.
+Just get it out of the github repo: <a href="https://github.com/Lokathor/gba-from-scratch-rs/blob/main/linker_scripts/mono_boot.ld">mono_boot.ld</a>
+It's not essential that you fully understand everything about it, since you generally won't need to reconfigure the linker script.
+That said, we'll briefly touch on each part of what it does.</p>
+<h3 id="how-the-linker-works"><a class="header" href="#how-the-linker-works">How The Linker Works</a></h3>
+<p>todo</p>
+<h3 id="entry"><a class="header" href="#entry">Entry</a></h3>
+<p>The <a href="https://sourceware.org/binutils/docs/ld/Entry-Point.html">Entry</a> is the name of the function execution should start at when the program begins.
+The linker will store the address of the entry function we pick in the <code>e_entry</code> field of the program's ELF metadata when we compile an executable.</p>
+<p>This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't even use the ELF format.
+However, when we emulate the program in mGBA it will expect <code>e_entry</code> to be one of several possible addresses, and it rejects our program otherwise.
+Right now we'll pick the name <code>__start</code> as the entry point function, and then later on we'll use other steps to make sure the <code>__start</code> function ends up where we want.
+The name <code>__start</code> is just a conventional name to use, you could potentially use some other name if you really wanted to.</p>
+<h3 id="memory"><a class="header" href="#memory">Memory</a></h3>
+<p>The <a href="https://sourceware.org/binutils/docs/ld/MEMORY.html">Memory</a> description tells the linker what the available memory of the GBA is like.
+The names for each region are up to us, they just need to match the same names in out Sections description.
+For each region we specify if the memory is readable, writable, and/or executable.
+This affects where stuff is placed if none of the Sections rules covers an input section.
+Also we give the base address of each memory region, as well as how many bytes big that region is.
+The address allows the linker to hardcode the jumps from point to point within the program.
+The size allows the linker to report an error if we put too much into a single memory region.</p>
+<h3 id="sections"><a class="header" href="#sections">Sections</a></h3>
+<p>Finally, the <a href="https://sourceware.org/binutils/docs/ld/SECTIONS.html">Sections</a> information is the longest part of the file.</p>
 
                     </main>
 
