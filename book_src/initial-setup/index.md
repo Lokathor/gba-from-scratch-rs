@@ -154,9 +154,25 @@ Just get it out of the github repo: [mono_boot.ld](https://github.com/Lokathor/g
 It's not essential that you fully understand everything about it, since you generally won't need to reconfigure the linker script.
 That said, we'll briefly touch on each part of what it does.
 
-### How The Linker Works
+### What The Linker Does
 
-todo
+To make sense of what the linker script is doing we should probably first cover what the linker is trying to do.
+
+The linker gets as input a number of "object files", which contain compiled code.
+The code is sorted into a bunch of "sections".
+Usually there's one section per function that was compiled.
+Global variables and read-only data can also be among the sections.
+These all make up the "input sections".
+
+The linker's job is to re-arrange all of the input sections into the correct output sections.
+Then an executable file is written to disk with all the data sorted correctly.
+
+The linker script tells the linker how input sections are mapped to output sections.
+
+For most common platforms there are default linker scripts.
+There's a default way to link together a program for Windows or Android or things like that.
+When your platform is more obscure, or if you want to do anything unusual, then you have to provide your own linker script.
+Since the GBA is sufficiency obscure, we'll need to provide the linker script.
 
 ### Entry
 
