@@ -254,8 +254,20 @@ We'll be sticking to making just normal ROMs for almost everything we make here,
 Just get it out of the github repo: <a href="https://github.com/Lokathor/gba-from-scratch-rs/blob/main/linker_scripts/mono_boot.ld">mono_boot.ld</a>
 It's not essential that you fully understand everything about it, since you generally won't need to reconfigure the linker script.
 That said, we'll briefly touch on each part of what it does.</p>
-<h3 id="how-the-linker-works"><a class="header" href="#how-the-linker-works">How The Linker Works</a></h3>
-<p>todo</p>
+<h3 id="what-the-linker-does"><a class="header" href="#what-the-linker-does">What The Linker Does</a></h3>
+<p>To make sense of what the linker script is doing we should probably first cover what the linker is trying to do.</p>
+<p>The linker gets as input a number of &quot;object files&quot;, which contain compiled code.
+The code is sorted into a bunch of &quot;sections&quot;.
+Usually there's one section per function that was compiled.
+Global variables and read-only data can also be among the sections.
+These all make up the &quot;input sections&quot;.</p>
+<p>The linker's job is to re-arrange all of the input sections into the correct output sections.
+Then an executable file is written to disk with all the data sorted correctly.</p>
+<p>The linker script tells the linker how input sections are mapped to output sections.</p>
+<p>For most common platforms there are default linker scripts.
+There's a default way to link together a program for Windows or Android or things like that.
+When your platform is more obscure, or if you want to do anything unusual, then you have to provide your own linker script.
+Since the GBA is sufficiency obscure, we'll need to provide the linker script.</p>
 <h3 id="entry"><a class="header" href="#entry">Entry</a></h3>
 <p>The <a href="https://sourceware.org/binutils/docs/ld/Entry-Point.html">Entry</a> is the name of the function execution should start at when the program begins.
 The linker will store the address of the entry function we pick in the <code>e_entry</code> field of the program's ELF metadata when we compile an executable.</p>
