@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="initial-setup/calling-main.html"><strong aria-hidden="true">1.2.</strong> Calling main</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -415,38 +415,6 @@ Right now we'll start with a &quot;do nothing at all&quot; panic handle though.<
 <h2 id="finished"><a class="header" href="#finished">Finished</a></h2>
 <p>That all there is to it!
 You're a beginner GBA programmer!</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="calling-main"><a class="header" href="#calling-main">Calling <code>main</code></a></h1>
-<pre><pre class="playground"><code class="language-rust">#![no_std]
-#![no_main]
-#![feature(naked_functions)]
-
-#[naked]
-#[no_mangle]
-#[instruction_set(arm::a32)]
-#[link_section = &quot;.text.gba_rom_header&quot;]
-unsafe extern &quot;C&quot; fn __start() -&gt; ! {
-  core::arch::asm! {
-    &quot;b 1f&quot;,
-    &quot;.space 0xE0&quot;,
-    &quot;1:&quot;,
-    &quot;ldr r0, =main&quot;,
-    &quot;bx r0&quot;,
-    options(noreturn)
-  }
-}
-
-#[no_mangle]
-extern &quot;C&quot; fn main() -&gt; ! {
-  unsafe {
-    (0x0400_0000 as *mut u16).write_volatile(0);
-  }
-  loop {}
-}
-
-#[panic_handler]
-fn handle_panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
-  loop {}
-}</code></pre></pre>
 
                     </main>
 
