@@ -129,71 +129,14 @@ The linker script file itself is complicated enough to deserve its own sub-heade
 
 ## `linker_scripts/mono_boot.ld`
 
-In a folder called `linker_sctipts/` we want a file called `mono_boot.ld`.
+In a folder called `linker_scripts/` we want a file called `mono_boot.ld`.
 This is a configuration file for the linker.
-
-You're probably used to hearing about the compiler compiling your code.
-Actually there's one other very important step.
-The compiler makes one or more "object files".
-Once all the object files are created the linker is called and it "links" those object files into the actual executable file.
-The linker program is generally called `ld`, and newer linkers usually have a close name such as `lld`, `gold`, `mold`, etc.
-The "ld" is short for, and I wish I were making this up, "Link eDitor".
-
-We'll be using the linker from the ARM binutils.
-It has a [sizable manual](https://sourceware.org/binutils/docs/ld/) that you can read yourself if you want.
-Linker scripts *can* get quite complex, but we will have a fairly simple script.
-We will also use just one linker script for most of this project.
-
-The script is called `mono_boot.ld` because it's intended to work with the GBA's normal boot process where there's one cartridge per GBA.
-It is also possible to make "multiboot" ROMs, which let one GBA send code to several others via the link cable, so everyone can play a game off of just one cartridge.
-That's neat, but the downside is that all code and data for the download players has to fit into RAM only, which isn't much space at all.
-We'll be sticking to making just normal ROMs for almost everything we make here, but might cover how to do multiboot eventually.
 
 The actual content of the linker script is long enough that I won't paste it all in here.
 Just get it out of the github repo: [mono_boot.ld](https://github.com/Lokathor/gba-from-scratch-rs/blob/main/linker_scripts/mono_boot.ld)
-It's not essential that you fully understand everything about it, since you generally won't need to reconfigure the linker script.
-That said, we'll briefly touch on each part of what it does.
 
-### What The Linker Does
-
-To make sense of what the linker script is doing we should probably first cover what the linker is trying to do.
-
-The linker gets as input a number of "object files", which contain compiled code.
-The code is sorted into a bunch of "sections".
-Usually there's one section per function that was compiled.
-Global variables and read-only data can also be among the sections.
-These all make up the "input sections".
-
-The linker's job is to re-arrange all of the input sections into the correct output sections.
-Then an executable file is written to disk with all the data sorted correctly.
-
-The linker script tells the linker how input sections are mapped to output sections.
-
-For most common platforms there are default linker scripts.
-There's a default way to link together a program for Windows or Android or things like that.
-When your platform is more obscure, or if you want to do anything unusual, then you have to provide your own linker script.
-Since the GBA is sufficiency obscure, we'll need to provide the linker script.
-
-### Entry
-
-The [Entry](https://sourceware.org/binutils/docs/ld/Entry-Point.html) is the name of the function execution should start at when the program begins.
-The linker will store the address of the entry function we pick in the `e_entry` field of the program's ELF metadata when we compile an executable.
-
-This doesn't affect anything at all if we run our program on actual hardware, the hardware doesn't even use the ELF format.
-However, when we emulate the program in mGBA it will expect `e_entry` to be one of several possible addresses, and it rejects our program otherwise.
-Right now we'll pick the name `__start` as the entry point function, and then later on we'll use other steps to make sure the `__start` function ends up where we want.
-The name `__start` is just a conventional name to use, you could potentially use some other name if you really wanted to.
-
-### Memory
-
-The [Memory](https://sourceware.org/binutils/docs/ld/MEMORY.html) description tells the linker what the available memory of the GBA is like.
-The names for each region are up to us, they just need to match the same names in out Sections description.
-For each region we specify if the memory is readable, writable, and/or executable.
-This affects where stuff is placed if none of the Sections rules covers an input section.
-Also we give the base address of each memory region, as well as how many bytes big that region is.
-The address allows the linker to hardcode the jumps from point to point within the program.
-The size allows the linker to report an error if we put too much into a single memory region.
-
-### Sections
-
-Finally, the [Sections](https://sourceware.org/binutils/docs/ld/SECTIONS.html) information is the longest part of the file.
+There is a [sizable manual](https://sourceware.org/binutils/docs/ld/) for how the linker works.
+It includes a full description of how linker scripts operate.
+Actually understanding how the linker script works isn't necessary right now, or ever.
+The only reason we need this extra linker script file at all is because the GBA is a more obscure target than a desktop or phone or something like that.
+If we were compiling for a common platform the compiler would still follow a linker script, it would just use one that came with the linker instead.
