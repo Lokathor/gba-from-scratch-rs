@@ -179,6 +179,7 @@ Don't get discouraged too easily!
 Double check all the file names, all the file contents, what you typed in the command line, and so on.
 You can <a href="https://github.com/Lokathor/gba-from-scratch-rs/issues">open an issue</a> if you need to ask for help.
 Alternately, you can try asking in the <a href="https://discord.io/gbadev">GBA Dev Discord</a>.</p>
+<p>Let's cover each part of the example one at a time.</p>
 <h2 id="crate-inner-attributes"><a class="header" href="#crate-inner-attributes">Crate Inner Attributes</a></h2>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![no_std]
@@ -186,6 +187,27 @@ Alternately, you can try asking in the <a href="https://discord.io/gbadev">GBA D
 #![feature(naked_functions)]
 <span class="boring">fn main() {
 </span><span class="boring">}</span></code></pre></pre>
+<p>First we've got several &quot;inner&quot; attributes.
+They're like normal attributes but they go just inside of what they affect, rather than just outside of it.
+There's no way to have text &quot;outside&quot; of a file, so we have to use inner attributes here.
+Inner attributes always have to go first, before any other items like functions or structs or anything like that.
+The ordering of the attributes themselves doesn't matter,
+I just like sorting them from shortest to longest because it usually looks nice.</p>
+<p>First is <a href="https://doc.rust-lang.org/reference/names/preludes.html#the-no_std-attribute">no_std</a>.
+This prevents the compiler from automatically linking our program with the <code>std</code> and <code>alloc</code> crates.
+The GBA doesn't support <code>std</code> at all, so we'd get a build error if we didn't have <code>no_std</code>.
+It's possible to use <code>alloc</code>, but we'd have to do more setup to make it work, so for now we can't.
+Even without <code>std</code> available, we can still use a fairly good amount of Rust through the <code>core</code> crate.</p>
+<p>Next is the <a href="https://doc.rust-lang.org/reference/crates-and-source-files.html#the-no_main-attribute">no_main</a> attribute.
+Normally Rust would provide the actual <code>main</code> symbol which the OS calls at the start of the process.
+That function does some environment setup and then calls the main function of the Rust code we wrote.
+The compiler doesn't know how to write a <code>main</code> for the GBA though.
+So, we just tell it to not even try, and we'll handle that ourselves.</p>
+<p>Finally, we have a Nightly feature: <a href="https://github.com/rust-lang/rust/issues/90957">naked functions</a>.
+Normally a function has the &quot;prologue&quot; and &quot;epilogue&quot; (the intro and outro) handled by the compiler.
+This is for the best, because among other things it's what allows inlining to work.
+However, on rare occasions we'll need to have the compiler step back and let us take complete control.
+With the <code>naked_functions</code> Nightly feature, we'll be able to use <code>#[naked]</code> on a function when needed.</p>
 <h2 id="entry-point"><a class="header" href="#entry-point">Entry Point</a></h2>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -203,6 +225,47 @@ unsafe extern &quot;C&quot; fn __start() -&gt; ! {
   }
 }
 <span class="boring">}</span></code></pre></pre>
+<p>This is our <code>__start</code> function.
+Normally we'd want to define one in a library, but for now it's fine to define it right in the example.</p>
+<p>We call it <code>__start</code> and use <code>#[no_mangle]</code> to match the <code>ENTRY</code> part of our linker script.
+Normally Rust would apply name mangling to a function's name so that its symbol name doesn't clash with any other (which would cause a build error).
+Using <code>#[no_mangle]</code> stops the name mangling from happening on a particular function or static.
+It's the same idea as how <code>#[naked]</code> changes the (usually useful) default option into a weirder option.
+We also use <code>#[link_section=]</code> to put this function into the &quot;.text.gba_rom_header&quot; section.
+Section names can be alphanumeric, and also underscores and periods.
+The exact name we're using is because of what the linker script is expecting.
+The linker script will place the &quot;.text.gba_rom_header&quot; <em>input</em> section at the very start of the &quot;.text&quot; <em>output</em> section during linking.
+That means that we'll end up with our <code>__start</code> function, and its header data, at the very start of the ROM.</p>
+<p>The last attribute, <code>#[instruction_set(arm::a32)]</code>, sets the function to be encoded as <code>a32</code> instructions.
+Because we're building using the <code>thumbv4t-none-eabi</code> target, all functions will <em>default</em> to being <code>t32</code>.
+The <code>instruction_set</code> attribute lets us override the default and have an <code>a32</code> function.
+Normally our functions can be <code>a32</code> or <code>t32</code>, and <code>t32</code> tends to have better performance by default.
+Because of details about the GBA's boot up process, the <code>__start</code> function always has to be <code>a32</code> specifically.
+We can cover the boot up more later on.</p>
+<p>With all of the attributes out of the way, we get to declare the function itself: <code>unsafe extern &quot;C&quot; fn __start() -&gt; !</code>
+We're gonna mark <code>__start</code> as <code>unsafe</code> because no one should be calling it from Rust.
+Our expectation is that only the BIOS itself will call <code>__start</code>, so we'll just call the fn <code>unsafe</code> and say no one else can call it.
+Similarly, because the BIOS will effectively be calling the function, we declare that the function has the <code>extern &quot;C&quot;</code> ABI.
+It's Undefined Behavior (UB) for external code to call a Rust ABI function, so we have to use the C ABI.
+It's just the rules.
+Finally, we never return from <code>__start</code>, so we put down the return type as <code>!</code>.
+Because the function is a <code>#[naked]</code> function the compiler can't <em>actually</em> check that we never return from the function.
+Still, it serves as a mild reminder of our intent, to other programmers, or to our future selves.</p>
+<p>The body of a <code>#[naked]</code> function has to be a single <a href="https://doc.rust-lang.org/reference/inline-assembly.html">asm!</a> block.
+In this case, we're writing ARM assembly:</p>
+<pre><code class="language-arm">b 1f
+.space 0xE0
+1:
+b 1b
+</code></pre>
+<ul>
+<li>The first line is a &quot;branch&quot; (<code>b</code>) to the <code>1</code> label that's &quot;forward&quot; from this instruction (<code>1f</code>). In other words, the label on the third line of our asm block, where it says <code>1:</code>.</li>
+<li>The second line is a directive to add blank space to the output. We can tell it's a directive because it starts with a dot. The <code>.space</code> directive just adds blank space to the program. In this case, 0xE0 (224 decimal) bytes of blank space goes right after the branch instruction. That's where the header data goes. For initial development with an emulator it's fine to have a blank header, so more on header stuff will come later. Blank space isn't useful code though, which is why the previous line jumps over the blank space to the label.</li>
+<li>The third line <code>1:</code> is a label. We can tell it's a label because it ends with a <code>:</code> character. Within an <code>asm!</code> block you should only use numeric labels, which are always reusable without clashing. If you use <code>global_asm!</code>, or if you write an external assembly file, then you can also use alphanumeric labels if you're careful about which labels you export or not. A label marks the next instruction, either on the same line or on a future line. There can be more than one label pointing to the same instruction, and there can be blank lines between the label and the instruction. The number <code>1</code> itself isn't significant, we could pick any (positive, small-ish) number we like.</li>
+<li>The fourth line is a branch to the <code>1</code> label that is &quot;back&quot; from this instruction (<code>1b</code>). This jumps to the label on line 3. That label refers to this instruction. So this instruction just jumps to this instruction, over and over. It's like writing <code>loop {}</code>, just the assembly version of it.</li>
+</ul>
+<p>Long story short: our assembly block just jumps into an infinite loop.
+It's not very exciting, but the emulator at least won't crash bt trying to execute a blank part of the ROM or anything.</p>
 <h2 id="panic-handler"><a class="header" href="#panic-handler">Panic Handler</a></h2>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -211,8 +274,14 @@ fn handle_panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
   loop {}
 }
 <span class="boring">}</span></code></pre></pre>
-<h2 id="building-an-elf-and-fixing-a-rom"><a class="header" href="#building-an-elf-and-fixing-a-rom">Building an ELF and Fixing a ROM</a></h2>
-<p>todo</p>
+<p>Even if the program itself can't actually panic, Rust demands that you define a panic handler function.
+During compilation a panic handler that never gets called will be removed, the same as any function that's never called gets removed, but we have to define and then let the compiler decide for itself that it's unused.
+As our programs grow we might want to have a panic handler that does something with the panic info.
+Send a message to mGBA's debug output, or show something on the screen, or something like that.
+Right now we'll start with a &quot;do nothing at all&quot; panic handle though.</p>
+<h2 id="finished"><a class="header" href="#finished">Finished</a></h2>
+<p>That all there is to it!
+You're a beginner GBA programmer!</p>
 
                     </main>
 
