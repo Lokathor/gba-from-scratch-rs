@@ -29,6 +29,12 @@ but those parts I will explain as we go.
 Also, a general familiarity with using command line tools is probably a good idea,
 but if you're familiar with `cargo` then you probably know enough to get started.
 
+## Reporting A Problem
+
+If there's some sort of problem with the book,
+such as an explanation not being clear,
+then please open an [issue](https://github.com/Lokathor/gba-from-scratch-rs/issues) in the GitHub repository.
+
 ## License
 
 This book is available under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/) license.
