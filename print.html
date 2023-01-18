@@ -365,31 +365,31 @@ unsafe extern &quot;C&quot; fn __start() -&gt; ! {
 <p>This is our <code>__start</code> function.
 Normally we'd want to define one in a library, but for now it's fine to define it right in the example.</p>
 <p>We call it <code>__start</code> and use <code>#[no_mangle]</code> to match the <code>ENTRY</code> part of our linker script.
-Normally Rust would apply name mangling to a function's name so that its symbol name doesn't clash with any other (which would cause a build error).
-Using <code>#[no_mangle]</code> stops the name mangling from happening on a particular function or static.
+Normally Rust would apply name mangling to a function's name so that its symbol name doesn't clash with any other (because name clashes cause a build error).
+Using <code>#[no_mangle]</code> stops the name mangling from happening on a particular function or static (but we should limit how much we use it, to avoid those build errors).
 It's the same idea as how <code>#[naked]</code> changes the (usually useful) default option into a weirder option.
-We also use <code>#[link_section=]</code> to put this function into the &quot;.text.gba_rom_header&quot; section.
-Section names can be alphanumeric, and also underscores and periods.
-The exact name we're using is because of what the linker script is expecting.
+We also use <code>#[link_section=]</code> to put this function into the &quot;.text.gba_rom_header&quot; section (also because of the linker script).
+Section names can be alphanumeric, and they also allow underscores and periods.
 The linker script will place the &quot;.text.gba_rom_header&quot; <em>input</em> section at the very start of the &quot;.text&quot; <em>output</em> section during linking.
 That means that we'll end up with our <code>__start</code> function, and its header data, at the very start of the ROM.</p>
 <p>The last attribute, <code>#[instruction_set(arm::a32)]</code>, sets the function to be encoded as <code>a32</code> instructions.
 Because we're building using the <code>thumbv4t-none-eabi</code> target, all functions will <em>default</em> to being <code>t32</code>.
 The <code>instruction_set</code> attribute lets us override the default and have an <code>a32</code> function.
 Normally our functions can be <code>a32</code> or <code>t32</code>, and <code>t32</code> tends to have better performance by default.
-Because of details about the GBA's boot up process, the <code>__start</code> function always has to be <code>a32</code> specifically.
-We can cover the boot up more later on.</p>
+Because of details about the GBA's boot up process (which we'll talk about below), the <code>__start</code> function always has to be <code>a32</code> specifically.</p>
 <p>With all of the attributes out of the way, we get to declare the function itself: <code>unsafe extern &quot;C&quot; fn __start() -&gt; !</code>
-We're gonna mark <code>__start</code> as <code>unsafe</code> because no one should be calling it from Rust.
-Our expectation is that only the BIOS itself will call <code>__start</code>, so we'll just call the fn <code>unsafe</code> and say no one else can call it.
+We're gonna mark <code>__start</code> as <code>unsafe</code> because honestly no one should be calling it from Rust.
+Our expectation is that only the BIOS itself will call <code>__start</code>, and only the once at boot.
+So we'll just call the fn <code>unsafe</code> and say no one else can call it.
 Similarly, because the BIOS will effectively be calling the function, we declare that the function has the <code>extern &quot;C&quot;</code> ABI.
-It's Undefined Behavior (UB) for external code to call a Rust ABI function, so we have to use the C ABI.
+It's Undefined Behavior (UB) for any code other than a Rust function to call a Rust ABI function, so we have to use the C ABI for <code>__start</code>.
 It's just the rules.
-Finally, we never return from <code>__start</code>, so we put down the return type as <code>!</code>.
-Because the function is a <code>#[naked]</code> function the compiler can't <em>actually</em> check that we never return from the function.
-Still, it serves as a mild reminder of our intent, to other programmers, or to our future selves.</p>
+Finally, we should never return from <code>__start</code>, so we put down the return type as <code>!</code>.
+Actually this ends up being just a hint to future readers, because the compiler can't check the body of an inline assembly block.
+Still, it's probably a useful hint, and I'm sure that future readers of the code (which might be ourselves!) will appreciate our guidance.</p>
 <p>The body of a <code>#[naked]</code> function has to be a single <a href="https://doc.rust-lang.org/reference/inline-assembly.html">asm!</a> block.
-In this case, we're writing ARM assembly:</p>
+Assembly blocks can be multi-line string literals, or they can be a list of string literals (the list is joined with newlines during compilation).
+When we put the lines together the assembly looks like this:</p>
 <pre><code class="language-arm">b 1f
 .space 0xE0
 1:
@@ -401,8 +401,8 @@ b 1b
 <li>The third line <code>1:</code> is a label. We can tell it's a label because it ends with a <code>:</code> character. Within an <code>asm!</code> block you should only use numeric labels, which are always reusable without clashing. If you use <code>global_asm!</code>, or if you write an external assembly file, then you can also use alphanumeric labels if you're careful about which labels you export or not. A label marks the next instruction, either on the same line or on a future line. There can be more than one label pointing to the same instruction, and there can be blank lines between the label and the instruction. The number <code>1</code> itself isn't significant, we could pick any (positive, small-ish) number we like.</li>
 <li>The fourth line is a branch to the <code>1</code> label that is &quot;back&quot; from this instruction (<code>1b</code>). This jumps to the label on line 3. That label refers to this instruction. So this instruction just jumps to this instruction, over and over. It's like writing <code>loop {}</code>, just the assembly version of it.</li>
 </ul>
-<p>Long story short: our assembly block just jumps into an infinite loop.
-It's not very exciting, but the emulator at least won't crash bt trying to execute a blank part of the ROM or anything.</p>
+<p>In summary: our assembly block just jumps into an infinite loop.
+It's not very exciting, but the emulator at least won't crash by trying to execute a blank part of the ROM or whatever.</p>
 <h2 id="panic-handler"><a class="header" href="#panic-handler">Panic Handler</a></h2>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -416,9 +416,28 @@ During compilation a panic handler that never gets called will be removed, the s
 As our programs grow we might want to have a panic handler that does something with the panic info.
 Send a message to mGBA's debug output, or show something on the screen, or something like that.
 Right now we'll start with a &quot;do nothing at all&quot; panic handle though.</p>
-<h2 id="finished"><a class="header" href="#finished">Finished</a></h2>
-<p>That all there is to it!
-You're a beginner GBA programmer!</p>
+<h2 id="why-does-this-work"><a class="header" href="#why-does-this-work">Why Does This Work?</a></h2>
+<p>The GBA has an ARM7TDMI CPU.
+The ARM7TDMI uses the ARMv4T CPU architecture.
+When the CPU turns on, the <code>pc</code> register (&quot;program counter&quot;) is reset to 0, and the CPU begins executing address 0.
+This part is just how any ARM CPU works, it's not GBA specific.</p>
+<p>Address 0 on the GBA is in the BIOS memory.
+That's the &quot;Basic Input Output System&quot;.
+The GBA's BIOS data is built into the device itself, separate from whichever cartridge you insert.
+The BIOS has the code to play that <a href="https://www.youtube.com/watch?v=6_ZD3FxMcvQ">startup animation</a>, you know the one, with the nice sound.
+It also checks the ROM's header data, and will lock the system if the header is incorrect.
+We'll talk about header stuff more in a moment, but mGBA doesn't do the header check so for now it's fine to have a blank header.</p>
+<p>After the BIOS has done all of its work it will branch to the start of the ROM, <code>0x0800_0000</code>.
+That's where the linker script puts the start of the &quot;.text&quot; section.
+And at the <em>very start</em> of the &quot;.text&quot; section will be the &quot;.text.gba_rom_header&quot; section.
+The Rust compiler won't ever pick that for any code on its own, and we've only assigned one thing to use that section: our <code>__start</code> function.
+So our <code>__start</code> function is going to be at the very very start of the ROM.
+When the BIOS branches to the start of the ROM, it's branching to the <code>__start</code> function.
+Then all the stuff we talked about up above with the four lines of assembly will happen.</p>
+<p>And that's the basic idea of how this is working so far.
+I still haven't explained the full story on the <code>instruction_set</code> and <code>a32</code> stuff,
+but we'll save that for the next example.
+For now, you can already call yourself a beginner GBA programmer!</p>
 
                     </main>
 
