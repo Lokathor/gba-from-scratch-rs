@@ -1,6 +1,5 @@
 {
-  "rust-analyzer.checkOnSave.allTargets": false,
-  "rust-analyzer.checkOnSave.overrideCommand": [
+  "rust-analyzer.check.overrideCommand": [
     "cargo",
     "build",
     "--quiet",
