@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="initial-setup/calling-main.html"><strong aria-hidden="true">1.2.</strong> Calling main</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -438,102 +438,6 @@ Then all the stuff we talked about up above with the four lines of assembly will
 I still haven't explained the full story on the <code>instruction_set</code> and <code>a32</code> stuff,
 but we'll save that for the next example.
 For now, you can already call yourself a beginner GBA programmer!</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="calling-main"><a class="header" href="#calling-main">Calling <code>main</code></a></h1>
-<p>A program that does nothing except not crash isn't much of a program.
-Slightly more pressing is that defining <code>__start</code> within each and every example isn't a great way to do things.
-First let's put the <code>__start</code> function in <code>lib.rs</code> so that all our examples will automatically get it when they link with our library.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// lib.rs
-#![no_std]
-#![feature(naked_functions)]
-
-#[naked]
-#[no_mangle]
-#[instruction_set(arm::a32)]
-#[link_section = &quot;.text.gba_rom_header&quot;]
-unsafe extern &quot;C&quot; fn __start() -&gt; ! {
-  core::arch::asm! {
-    // jump over the header data itself
-    &quot;b 1f&quot;,
-    &quot;.space 0xE0&quot;,
-    &quot;1:&quot;,
-
-    // call to `main`
-    &quot;ldr r0, =main&quot;,
-    &quot;bx r0&quot;,
-    options(noreturn)
-  }
-}
-<span class="boring">}</span></code></pre></pre>
-<p>This is <em>mostly</em> the same as before.
-The difference is that we've replaced the <code>1: b 1b</code> loop with a call to a function named <code>main</code>.</p>
-<pre><code class="language-arm">ldr r0, =main
-bx r0
-</code></pre>
-<ul>
-<li><code>ldr reg, =symbol</code> is a &quot;pseudo-instruction&quot; that the assembler supports.
-The <code>ldr</code> instruction will &quot;load-register&quot;.
-You can load an &quot;immediate&quot; value, which is a small value encoded within the instruction,
-or you can load from an address stored in a register.
-If you load from an address in a register you can also apply an offset.
-This is how pointers to struct fields work: a base pointer and then some offset based on the field's position within a struct.
-When we use <code>ldr reg, =symbol</code> the assembler will insert the address of <code>main</code> at the end of the function and then use the <code>pc</code> value (the program counter) as the base address to offset from.
-It may sound complicated, but all of the lookups and math are handled for us by the assembler and linker.
-We just write the  name of the symbol we want to end up in the register and it'll happen.
-We could also write any large constant that doesn't fit in an immediate this way and the assembler will help us out.</li>
-<li><code>bx r0</code> is a &quot;branch-exchange&quot; to the address stored in <code>r0</code>.
-That's where we put the address of our <code>main</code> function, so the end of <code>__start</code> will branch-exchange to <code>main</code>.
-The &quot;branch-exchange&quot; is a special type of branch that lets the CPU switch between ARM code (a32) and Thumb code (t32).
-On the GBA's CPU it's the <em>only</em> way for user code to change code modes.
-Later ARM CPUs relaxed this restriction, but on the GBA we've got to use <code>bx</code>.
-Since <code>__start</code> is always a32 code, and the <code>main</code> function is almost always t32 code, we need to use <code>bx</code> and not just <code>b</code>.
-Also of note is that <code>b</code> branches to a <em>label</em>, while <code>bx</code> branch-exchanges to a <em>register</em>.
-Sometimes, like now, it's an extra step to load a function's address into a register when we want to use <code>bx</code>.</li>
-</ul>
-<p>So now we have a <code>__start</code> function that will call a <code>main</code> function.
-But where's <code>main</code>?
-It's not in the library at all.
-It might seem like a problem to call a function that doesn't exist yet, but it's okay.
-As long as <em>somewhere</em> defines <code>main</code> when actually linking an executable, the linker will connect everything together just fine.
-If we try to make an example that doesn't define a <code>main</code> we'll get a linker error and the build will fail.</p>
-<p>Now let's have a look at our second example.
-We'll call it <code>min2.rs</code>.</p>
-<p>First, we need the example to link to our library.
-Normally this would happen automatically when the example calls any functions in the library or uses any types from the library.
-Right now the library is nearly empty though, there's nothing to call, nothing to <code>use</code>.
-We can force the library to be linked in with an <code>extern crate</code> statement,</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// in min2.rs
-extern crate gba_from_scratch_rs;
-<span class="boring">}</span></code></pre></pre>
-<p>This won't be necessary in the future, but for now it will get the job done.</p>
-<p>Next we need that <code>main</code> function.</p>
-<pre><pre class="playground"><code class="language-rust">// in min2.rs
-#[no_mangle]
-extern &quot;C&quot; fn main() -&gt; ! {
-  unsafe {
-    (0x0500_0000 as *mut u16).write_volatile(0b11111);
-    (0x0400_0000 as *mut u16).write_volatile(0);
-  }
-  loop {}
-}</code></pre></pre>
-<p>Like happened with <code>__start</code>, we need <code>main</code> to be <code>#[no_mangle]</code>.
-This will allow the library to link with it during the linking of the executable.
-Also like with <code>__start</code>, the return type of <code>main</code> will be <code>-&gt; !</code>, because we should never return from <code>main</code> back to <code>__start</code>.</p>
-<p>The actual code in the body of <code>main</code> is two volatile writes.
-These are to Memory-mapped IO (MMIO) addresses, which are how the CPU controls the rest of the hardware.
-Most of learning to use the GBA well boils down to learning what all the MMIO controls allow for.</p>
-<p>The first <code>write_volatile</code> call sets the color of the backdrop, the color that's shown for a pixel when nothing else is shown there.
-Color values on the GBA are 5 bits per channel, red as the lowest bits, then green, then blue.</p>
-<p>The second <code>write_volatile</code> sets the &quot;display control&quot; to 0.
-When the BIOS first transfers control to our program, the display control is set with the &quot;forced blank&quot; bit on.
-This is why the <code>min1</code> example was all white, because display was forced to be &quot;blank&quot;.
-When we write 0 to the display control this disables the forced blank bit, allowing normal video display.
-Since we haven't set anything else anywhere, the whole screen will be the backdrop color (which we set to red).</p>
-<p>This means that our entire example does nothing but turn the screen red.
-Still not very interactive, but it's some progress.</p>
 
                     </main>
 
