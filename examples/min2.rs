@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(naked_functions)]
 
 extern crate gba_from_scratch_rs;
 
