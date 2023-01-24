@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="initial-setup/calling-main.html"><strong aria-hidden="true">1.2.</strong> Calling main</a></li><li class="chapter-item expanded "><a href="initial-setup/volatile-ops.html"><strong aria-hidden="true">1.3.</strong> Volatile Ops</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -438,6 +438,382 @@ Then all the stuff we talked about up above with the four lines of assembly will
 I still haven't explained the full story on the <code>instruction_set</code> and <code>a32</code> stuff,
 but we'll save that for the next example.
 For now, you can already call yourself a beginner GBA programmer!</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="calling-main"><a class="header" href="#calling-main">Calling <code>main</code></a></h1>
+<p>A program that does nothing except not crash isn't much of a program.
+Slightly more pressing is that defining <code>__start</code> within each and every example isn't a great way to do things.
+First let's put the <code>__start</code> function in <code>lib.rs</code> so that all our examples will automatically get it when they link with our library.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// lib.rs
+#![no_std]
+#![feature(naked_functions)]
+
+#[naked]
+#[no_mangle]
+#[instruction_set(arm::a32)]
+#[link_section = &quot;.text.gba_rom_header&quot;]
+unsafe extern &quot;C&quot; fn __start() -&gt; ! {
+  core::arch::asm! {
+    // jump over the header data itself
+    &quot;b 1f&quot;,
+    &quot;.space 0xE0&quot;,
+    &quot;1:&quot;,
+
+    // call to `main`
+    &quot;ldr r0, =main&quot;,
+    &quot;bx r0&quot;,
+    options(noreturn)
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>This is <em>mostly</em> the same as before.
+The difference is that we've replaced the <code>1: b 1b</code> loop with a call to a function named <code>main</code>.</p>
+<pre><code class="language-arm">ldr r0, =main
+bx r0
+</code></pre>
+<ul>
+<li><code>ldr reg, =symbol</code> is a &quot;pseudo-instruction&quot; that the assembler supports.
+The <code>ldr</code> instruction will &quot;load-register&quot;.
+You can load an &quot;immediate&quot; value, which is a small value encoded within the instruction,
+or you can load from an address stored in a register.
+If you load from an address in a register you can also apply an offset.
+This is how pointers to struct fields work: a base pointer and then some offset based on the field's position within a struct.
+When we use <code>ldr reg, =symbol</code> the assembler will insert the address of <code>main</code> at the end of the function and then use the <code>pc</code> value (the program counter) as the base address to offset from.
+It may sound complicated, but all of the lookups and math are handled for us by the assembler and linker.
+We just write the  name of the symbol we want to end up in the register and it'll happen.
+We could also write any large constant that doesn't fit in an immediate this way and the assembler will help us out.</li>
+<li><code>bx r0</code> is a &quot;branch-exchange&quot; to the address stored in <code>r0</code>.
+That's where we put the address of our <code>main</code> function, so the end of <code>__start</code> will branch-exchange to <code>main</code>.
+The &quot;branch-exchange&quot; is a special type of branch that lets the CPU switch between ARM code (a32) and Thumb code (t32).
+On the GBA's CPU it's the <em>only</em> way for user code to change code modes.
+Later ARM CPUs relaxed this restriction, but on the GBA we've got to use <code>bx</code>.
+Since <code>__start</code> is always a32 code, and the <code>main</code> function is almost always t32 code, we need to use <code>bx</code> and not just <code>b</code>.
+Also of note is that <code>b</code> branches to a <em>label</em>, while <code>bx</code> branch-exchanges to a <em>register</em>.
+Sometimes, like now, it's an extra step to load a function's address into a register when we want to use <code>bx</code>.</li>
+</ul>
+<p>So now we have a <code>__start</code> function that will call a <code>main</code> function.
+But where's <code>main</code>?
+It's not in the library at all.
+It might seem like a problem to call a function that doesn't exist yet, but it's okay.
+As long as <em>somewhere</em> defines <code>main</code> when actually linking an executable, the linker will connect everything together just fine.
+If we try to make an example that doesn't define a <code>main</code> we'll get a linker error and the build will fail.</p>
+<p>Now let's have a look at our second example.
+We'll call it <code>min2.rs</code>.</p>
+<p>First, we need the example to link to our library.
+Normally this would happen automatically when the example calls any functions in the library or uses any types from the library.
+Right now the library is nearly empty though, there's nothing to call, nothing to <code>use</code>.
+We can force the library to be linked in with an <code>extern crate</code> statement,</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in min2.rs
+extern crate gba_from_scratch_rs;
+<span class="boring">}</span></code></pre></pre>
+<p>This won't be necessary in the future, but for now it will get the job done.</p>
+<p>Next we need that <code>main</code> function.</p>
+<pre><pre class="playground"><code class="language-rust">// in min2.rs
+#[no_mangle]
+extern &quot;C&quot; fn main() -&gt; ! {
+  unsafe {
+    (0x0500_0000 as *mut u16).write_volatile(0b11111);
+    (0x0400_0000 as *mut u16).write_volatile(0);
+  }
+  loop {}
+}</code></pre></pre>
+<p>Like happened with <code>__start</code>, we need <code>main</code> to be <code>#[no_mangle]</code>.
+This will allow the library to link with it during the linking of the executable.
+Also like with <code>__start</code>, the return type of <code>main</code> will be <code>-&gt; !</code>, because we should never return from <code>main</code> back to <code>__start</code>.</p>
+<p>The actual code in the body of <code>main</code> is two volatile writes.
+These are to Memory-mapped IO (MMIO) addresses, which are how the CPU controls the rest of the hardware.
+Most of learning to use the GBA well boils down to learning what all the MMIO controls allow for.
+We'll go over the &quot;volatile&quot; part in the next lesson, but it is necessary to use a volatile write and not a normal write.</p>
+<p>The first <code>write_volatile</code> call sets the color of the backdrop, the color that's shown for a pixel when nothing else is shown there.
+Color values on the GBA are 5 bits per channel, red as the lowest bits, then green, then blue.</p>
+<p>The second <code>write_volatile</code> sets the &quot;display control&quot; to 0.
+When the BIOS first transfers control to our program, the display control is set with the &quot;forced blank&quot; bit on.
+This is why the <code>min1</code> example was all white, because display was forced to be &quot;blank&quot;.
+When we write 0 to the display control this disables the forced blank bit, allowing normal video display.
+Since we haven't set anything else anywhere, the whole screen will be the backdrop color (which we set to red).</p>
+<p>This means that our entire example does nothing but turn the screen red.
+Still not very interactive, but it's some progress.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="volatile-ops"><a class="header" href="#volatile-ops">Volatile Ops</a></h1>
+<p>In the previous lesson we used the <code>write_volatile</code> method of some pointers.
+There's also a <code>read_volatile</code> method to go with it as well.
+These both perform a &quot;volatile access&quot;.
+Volatile memory accesses are special because they tell the compiler that a special side effect is going on.
+It's a side effect that that compiler <em>does not</em> know about the specifics of.
+This means that the compiler isn't free to alter the memory accesses themselves, because that would alter when the side effects happen too.</p>
+<p>Let's have some examples of optimization affecting memory accesses:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn do_thing(y: &amp;mut i32) {
+  *y = 6;
+  *y = 7;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>When we have code like this, the compiler will generally eliminate the step where 6 is written to <code>y</code>.
+Instead, it will just write the value 7 to <code>y</code>.
+That's normally great, because the best way to make a function fast is to cut down on the work it does.
+However, if there was a side effect of the write, like if writing the value to a <em>special</em> address changed the hardware state via MMIO,
+then losing some of our side effects would mean we lose some of our hardware state.</p>
+<p>The same thing can be the case with reading memory as well:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn loop_until_it_is_10(y: &amp;mut i32) {
+  while *y != 10 {}
+}
+<span class="boring">}</span></code></pre></pre>
+<p>With standard memory the compiler would be totally justified in making this function read <code>y</code> just once to check for 10, and then infinitely loop after that if it wasn't 10.
+Because if it's not 10 the first time, it won't be 10 the second time through the loop, or the next, or the next.
+Except, what if we had a <em>special</em> MMIO address that gives the CPU some sort of info about the outside state, like button state or display state.
+If that were the case, you'd definitely need to actually read the value and check against 10 every time the programmer said to.</p>
+<p>Not only can the compiler eliminate memory reads and writes, but it can also even <em>add</em> memory reads in some situations.
+If there's a reference (that doesn't contain an <code>UnsafeCell</code> based type), the compiler is allowed to &quot;speculatively&quot; read from the reference.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn might_read_ahead_of_time(y: &amp;i32, z: i32) -&gt; i32 {
+  if complex_condition_check(z) {
+    1 + *y
+  } else {
+    1 + z
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>According to the code we wrote, <code>y</code> is only supposed to be read from if the check function returns <code>true</code>.
+However, because <code>y</code> is a reference, the compiler is <em>allowed</em> to read from <code>y</code> before the check function is called.
+Memory is extremely slow to access, and modern CPUs can perform other work while they wait for memory accesses to complete.
+In many cases it's <em>great</em> if the compiler can start the read of <code>y</code> earlier and have that happen while the check computation is going.
+If it turns out the check fails, then the read result can just be discarded anyway.
+But, again, if there's MMIO side effects involved, then reading memory earlier than expected might do something bad.</p>
+<p>So this is where &quot;volatile&quot; comes in.
+Volatile means &quot;please, just do it how I said to, trust me&quot;.</p>
+<p>For all of our MMIO stuff:</p>
+<ol>
+<li>We <strong>don't</strong> want to use references.</li>
+<li>We <strong>do</strong> want to use volatile.</li>
+</ol>
+<p>Unfortunately for us, the fundamental volatile read and write operations are defined for raw pointers.
+Raw pointers are unsafe to use because anyone can just <em>make up</em> any raw pointer they want to at any time.
+If you just pick a random pointer address and write some value to it, that could mess up anything at all.</p>
+<p>We will be doing <em>a lot</em> of MMIO access, so we want as much of it as possible to all be done in safe code.
+If we always work directly on raw pointers we'll have unsafe stuff spread everywhere.
+It'll be super hard to tell where the actual dangerous parts of the program are.</p>
+<p>And the thing is, most MMIO access is totally safe.
+Writing a new backdrop color, or a new display control setting, can be done at any time.
+There's a small number of cases where MMIO is not safe to do at any time, but those are rare.</p>
+<p>So what we'll do is use the &quot;Unsafe Creation, Then Safe Use&quot; pattern.
+Basically we'll make an alternate pointer type for our volatile access stuff.
+It'll still be unsafe to make these volatile pointers, but once made they can be used as much as necessary from safe code.</p>
+<h2 id="the-voladdress-type"><a class="header" href="#the-voladdress-type">The <code>VolAddress</code> type</a></h2>
+<p>If you go use the <a href="https://docs.rs/gba">gba</a> crate, it defines MMIO addresses using the <a href="https://docs.rs/voladdress">voladdress</a> crate.
+I promised that we'd write all our code from scratch, and we will do so, but we'll be keeping the design of our volatile pointer type very close to how the <code>voladdress</code> crate has it.
+It's a lot less confusing to move between a tutorial and bigger &quot;real projects&quot; when the basic support layers are the same.
+I wouldn't suggest that we use differently designed <code>Option</code> and <code>Result</code> types, so we should probably keep our <code>VolAddress</code> design similar as well.</p>
+<p>Since the null address at 0 will never be a valid address for volatile reads and writes, let's wrap the <a href="https://doc.rust-lang.org/nightly/core/num/struct.NonZeroUsize.html">NonZeroUsize</a> type.
+That way <code>VolAddress</code> and <code>Option&lt;VolAddress&gt;</code> will both fit in a single CPU register.
+We know that the address can point to different types of things, so we've got to make it a generic type.
+Our first attempt might look like this:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in voladdress.rs
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T&gt; {
+  address: usize,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>but this doesn't work, we get a rather interesting error:</p>
+<pre><code>error[E0392]: parameter `T` is never used    
+ --&gt; src\voladdress.rs:8:23
+  |
+8 | pub struct VolAddress&lt;T&gt; {
+  |                       ^ unused parameter
+  |
+  = help: consider removing `T`, referring to it in a field, or using a marker such as `PhantomData`
+  = help: if you intended `T` to be a const parameter, use `const T: usize` instead
+</code></pre>
+<p>If there's going to be a generic target type <code>T</code> then we need to use it somewhere in the fields of the struct.
+It's just a rule for how things work.
+There's no actual <code>T</code> value we're storing, so let's use that <a href="https://doc.rust-lang.org/nightly/core/marker/struct.PhantomData.html">PhantomData</a> type it suggested.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T&gt; {
+  address: NonZeroUsize,
+  target: PhantomData&lt;T&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Now we've &quot;used&quot; the <code>T</code> in the <code>PhantomData</code>.
+The <code>PhantomData</code> itself is a magical part of the language, it makes any generic parameter count as used without holding anything at all.</p>
+<p>As I mentioned before, we'll have volatile addresses that are <em>usually</em> safe to read and write, but not always.
+We can make extra generic parameters to help handle this too.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Safe;
+pub struct Unsafe;
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T, R, W&gt; {
+  address: NonZeroUsize,
+  target: PhantomData&lt;T&gt;,
+  read_status: PhantomData&lt;R&gt;,
+  write_status: PhantomData&lt;W&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Now lets add a <code>read</code> method for our <code>VolAddress</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, W&gt; VolAddress&lt;T, Safe, W&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub fn read(self) -&gt; T {
+    unsafe { (self.address.get() as *const T).read_volatile() }
+  }
+}
+
+impl&lt;T, W&gt; VolAddress&lt;T, Unsafe, W&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub unsafe fn read(self) -&gt; T {
+    (self.address.get() as *const T).read_volatile()
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>For a moment it might seem like we're defining <code>read</code> twice.
+However, note that the <code>R</code> parameter of the type is different for each impl block.</p>
+<ul>
+<li>If the address is always safe to read then we make <code>R</code> be <code>Safe</code>, and the first method will be available.</li>
+<li>If the address is unsafe to read we fill <code>R</code> with <code>Unsafe</code>, and the second method will be available instead.</li>
+<li>If the address shouldn't be read at all then <code>R</code> can be <code>()</code> and then there won't be a <code>read</code> method.</li>
+</ul>
+<p>If that doesn't make sense right away that's okay.
+When I first came up with the design it took me about 5 minutes to let it sink in that Rust would let me do it like this.
+But, once you've understood it, I think it's a pretty great way to ensure the correct access is happening using the type system instead of runtime checks.</p>
+<p>We can pull the same trick with <code>write</code> as well, using our <code>W</code> parameter:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, R&gt; VolAddress&lt;T, R, Safe&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub fn write(self, t: T) {
+    unsafe { (self.address.get() as *mut T).write_volatile(t) }
+  }
+}
+
+impl&lt;T, R&gt; VolAddress&lt;T, R, Unsafe&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub unsafe fn write(self, t: T) {
+    (self.address.get() as *mut T).write_volatile(t)
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The last thing we'll define right now is converting between <code>usize</code> values and <code>VolAddress</code> values:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, R, W&gt; VolAddress&lt;T, R, W&gt; where T: Copy {
+  #[inline]
+  #[must_use]
+  pub const unsafe fn new(address: usize) -&gt; Self {
+    assert!(address != 0);
+    Self {
+      address: NonZeroUsize::new_unchecked(address),
+      target: PhantomData,
+      read_status: PhantomData,
+      write_status: PhantomData
+    }
+  }
+
+  #[inline]
+  #[must_use]
+  pub const fn as_usize(self) -&gt; usize {
+    self.address.get()
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="defining-an-mmio-address"><a class="header" href="#defining-an-mmio-address">Defining An MMIO Address</a></h2>
+<p>Now that we've got a basic working <code>VolAddress</code> type let's put it to use.
+The two addresses we've seen so far are the backdrop color and the display control.
+Defining the display control would involve a lot of bitwise ops stuff, so we'll put that off for later.</p>
+<p>Let's handle the backdrop address by first defining a type for colors.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: color.rs
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Color(pub u16);
+<span class="boring">}</span></code></pre></pre>
+<p>Any time we define a type for use with MMIO, we want to be sure it's a <code>#[repr(transparent)]</code> wrapper around one of the 1, 2, or 4 byte int types (<code>u8</code>, <code>i8</code>, <code>u16</code>, <code>i16</code>, <code>u32</code>, or <code>i32</code>).
+That way the actual memory access can always happen as a single instruction.
+If a type's size doesn't allow it to be accessed from memory as a single instruction then the compiler is free to just &quot;do its best&quot;.
+The code will do some instruction sequence that eventually gets a value, but with MMIO we want to have high confidence about exactly what's going on.
+That's why we're sticking to only wrapping the native int types with our MMIO types.</p>
+<p>Anyway, a <code>Color</code> is 5 bits per channel, and any bit pattern is valid, so we can make the field be <code>pub</code>.
+We could have all sorts of other methods, but just the base definition is sufficient to define our backdrop address.
+Let's try to keep our MMIO definitions in a single file if we can.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: mmio.rs
+
+pub const BACKDROP_COLOR: VolAddress&lt;Color, Safe, Safe&gt; = unsafe { VolAddress::new(0x0500_0000) };
+<span class="boring">}</span></code></pre></pre>
+<p>And since we're starting to have a lot of modules let's make a prelude for our library.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: prelude.rs
+
+pub use crate::color::*;
+pub use crate::mmio::*;
+pub use crate::voladdress::*;
+<span class="boring">}</span></code></pre></pre>
+<p>So hopefully our examples can just import the library prelude, instead of importing all sorts of individual little types.
+Because we're gonna have a lot of types as we go.</p>
+<p>And every time we add one of these library modules we need to update the parent module, which is <code>lib.rs</code> in this case</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in lib.rs
+pub mod voladdress;
+pub mod color;
+pub mod mmio;
+pub mod prelude;
+<span class="boring">}</span></code></pre></pre>
+<p>From now on when there's new module files remember to declare the module in the parent, even if I don't say that part.</p>
+<p>Okay, now that everything is all set in the library, we can make a new <code>min3.rs</code> example.</p>
+<pre><pre class="playground"><code class="language-rust">// New Example: min3.rs
+#![no_std]
+#![no_main]
+
+use gba_from_scratch_rs::prelude::*;
+
+#[no_mangle]
+extern &quot;C&quot; fn main() -&gt; ! {
+  BACKDROP_COLOR.write(Color(0b11111));
+  
+  unsafe {
+    (0x0400_0000 as *mut u16).write_volatile(0);
+  }
+  loop {}
+}
+
+#[panic_handler]
+fn handle_panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
+  loop {}
+}</code></pre></pre>
+<p>And this new example... turns the screen red.
+Exactly the same as the last example.
+It might seem like we said a lot and didn't accomplish much, but we've moved part of the program out of the <code>unsafe</code> block.
+It's always worth it when you can learn a bit and then move code out of an <code>unsafe</code> block and over to the safe portion of the program.</p>
 
                     </main>
 

@@ -1,0 +1,467 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Volatile Ops - GBA From Scratch With Rust</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../initial-setup/index.html"><strong aria-hidden="true">1.</strong> Initial Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../initial-setup/minimal-example.html"><strong aria-hidden="true">1.1.</strong> A Minimal Example</a></li><li class="chapter-item expanded "><a href="../initial-setup/calling-main.html"><strong aria-hidden="true">1.2.</strong> Calling main</a></li><li class="chapter-item expanded "><a href="../initial-setup/volatile-ops.html" class="active"><strong aria-hidden="true">1.3.</strong> Volatile Ops</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">GBA From Scratch With Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="volatile-ops"><a class="header" href="#volatile-ops">Volatile Ops</a></h1>
+<p>In the previous lesson we used the <code>write_volatile</code> method of some pointers.
+There's also a <code>read_volatile</code> method to go with it as well.
+These both perform a &quot;volatile access&quot;.
+Volatile memory accesses are special because they tell the compiler that a special side effect is going on.
+It's a side effect that that compiler <em>does not</em> know about the specifics of.
+This means that the compiler isn't free to alter the memory accesses themselves, because that would alter when the side effects happen too.</p>
+<p>Let's have some examples of optimization affecting memory accesses:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn do_thing(y: &amp;mut i32) {
+  *y = 6;
+  *y = 7;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>When we have code like this, the compiler will generally eliminate the step where 6 is written to <code>y</code>.
+Instead, it will just write the value 7 to <code>y</code>.
+That's normally great, because the best way to make a function fast is to cut down on the work it does.
+However, if there was a side effect of the write, like if writing the value to a <em>special</em> address changed the hardware state via MMIO,
+then losing some of our side effects would mean we lose some of our hardware state.</p>
+<p>The same thing can be the case with reading memory as well:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn loop_until_it_is_10(y: &amp;mut i32) {
+  while *y != 10 {}
+}
+<span class="boring">}</span></code></pre></pre>
+<p>With standard memory the compiler would be totally justified in making this function read <code>y</code> just once to check for 10, and then infinitely loop after that if it wasn't 10.
+Because if it's not 10 the first time, it won't be 10 the second time through the loop, or the next, or the next.
+Except, what if we had a <em>special</em> MMIO address that gives the CPU some sort of info about the outside state, like button state or display state.
+If that were the case, you'd definitely need to actually read the value and check against 10 every time the programmer said to.</p>
+<p>Not only can the compiler eliminate memory reads and writes, but it can also even <em>add</em> memory reads in some situations.
+If there's a reference (that doesn't contain an <code>UnsafeCell</code> based type), the compiler is allowed to &quot;speculatively&quot; read from the reference.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn might_read_ahead_of_time(y: &amp;i32, z: i32) -&gt; i32 {
+  if complex_condition_check(z) {
+    1 + *y
+  } else {
+    1 + z
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>According to the code we wrote, <code>y</code> is only supposed to be read from if the check function returns <code>true</code>.
+However, because <code>y</code> is a reference, the compiler is <em>allowed</em> to read from <code>y</code> before the check function is called.
+Memory is extremely slow to access, and modern CPUs can perform other work while they wait for memory accesses to complete.
+In many cases it's <em>great</em> if the compiler can start the read of <code>y</code> earlier and have that happen while the check computation is going.
+If it turns out the check fails, then the read result can just be discarded anyway.
+But, again, if there's MMIO side effects involved, then reading memory earlier than expected might do something bad.</p>
+<p>So this is where &quot;volatile&quot; comes in.
+Volatile means &quot;please, just do it how I said to, trust me&quot;.</p>
+<p>For all of our MMIO stuff:</p>
+<ol>
+<li>We <strong>don't</strong> want to use references.</li>
+<li>We <strong>do</strong> want to use volatile.</li>
+</ol>
+<p>Unfortunately for us, the fundamental volatile read and write operations are defined for raw pointers.
+Raw pointers are unsafe to use because anyone can just <em>make up</em> any raw pointer they want to at any time.
+If you just pick a random pointer address and write some value to it, that could mess up anything at all.</p>
+<p>We will be doing <em>a lot</em> of MMIO access, so we want as much of it as possible to all be done in safe code.
+If we always work directly on raw pointers we'll have unsafe stuff spread everywhere.
+It'll be super hard to tell where the actual dangerous parts of the program are.</p>
+<p>And the thing is, most MMIO access is totally safe.
+Writing a new backdrop color, or a new display control setting, can be done at any time.
+There's a small number of cases where MMIO is not safe to do at any time, but those are rare.</p>
+<p>So what we'll do is use the &quot;Unsafe Creation, Then Safe Use&quot; pattern.
+Basically we'll make an alternate pointer type for our volatile access stuff.
+It'll still be unsafe to make these volatile pointers, but once made they can be used as much as necessary from safe code.</p>
+<h2 id="the-voladdress-type"><a class="header" href="#the-voladdress-type">The <code>VolAddress</code> type</a></h2>
+<p>If you go use the <a href="https://docs.rs/gba">gba</a> crate, it defines MMIO addresses using the <a href="https://docs.rs/voladdress">voladdress</a> crate.
+I promised that we'd write all our code from scratch, and we will do so, but we'll be keeping the design of our volatile pointer type very close to how the <code>voladdress</code> crate has it.
+It's a lot less confusing to move between a tutorial and bigger &quot;real projects&quot; when the basic support layers are the same.
+I wouldn't suggest that we use differently designed <code>Option</code> and <code>Result</code> types, so we should probably keep our <code>VolAddress</code> design similar as well.</p>
+<p>Since the null address at 0 will never be a valid address for volatile reads and writes, let's wrap the <a href="https://doc.rust-lang.org/nightly/core/num/struct.NonZeroUsize.html">NonZeroUsize</a> type.
+That way <code>VolAddress</code> and <code>Option&lt;VolAddress&gt;</code> will both fit in a single CPU register.
+We know that the address can point to different types of things, so we've got to make it a generic type.
+Our first attempt might look like this:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in voladdress.rs
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T&gt; {
+  address: usize,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>but this doesn't work, we get a rather interesting error:</p>
+<pre><code>error[E0392]: parameter `T` is never used    
+ --&gt; src\voladdress.rs:8:23
+  |
+8 | pub struct VolAddress&lt;T&gt; {
+  |                       ^ unused parameter
+  |
+  = help: consider removing `T`, referring to it in a field, or using a marker such as `PhantomData`
+  = help: if you intended `T` to be a const parameter, use `const T: usize` instead
+</code></pre>
+<p>If there's going to be a generic target type <code>T</code> then we need to use it somewhere in the fields of the struct.
+It's just a rule for how things work.
+There's no actual <code>T</code> value we're storing, so let's use that <a href="https://doc.rust-lang.org/nightly/core/marker/struct.PhantomData.html">PhantomData</a> type it suggested.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T&gt; {
+  address: NonZeroUsize,
+  target: PhantomData&lt;T&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Now we've &quot;used&quot; the <code>T</code> in the <code>PhantomData</code>.
+The <code>PhantomData</code> itself is a magical part of the language, it makes any generic parameter count as used without holding anything at all.</p>
+<p>As I mentioned before, we'll have volatile addresses that are <em>usually</em> safe to read and write, but not always.
+We can make extra generic parameters to help handle this too.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Safe;
+pub struct Unsafe;
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct VolAddress&lt;T, R, W&gt; {
+  address: NonZeroUsize,
+  target: PhantomData&lt;T&gt;,
+  read_status: PhantomData&lt;R&gt;,
+  write_status: PhantomData&lt;W&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Now lets add a <code>read</code> method for our <code>VolAddress</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, W&gt; VolAddress&lt;T, Safe, W&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub fn read(self) -&gt; T {
+    unsafe { (self.address.get() as *const T).read_volatile() }
+  }
+}
+
+impl&lt;T, W&gt; VolAddress&lt;T, Unsafe, W&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub unsafe fn read(self) -&gt; T {
+    (self.address.get() as *const T).read_volatile()
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>For a moment it might seem like we're defining <code>read</code> twice.
+However, note that the <code>R</code> parameter of the type is different for each impl block.</p>
+<ul>
+<li>If the address is always safe to read then we make <code>R</code> be <code>Safe</code>, and the first method will be available.</li>
+<li>If the address is unsafe to read we fill <code>R</code> with <code>Unsafe</code>, and the second method will be available instead.</li>
+<li>If the address shouldn't be read at all then <code>R</code> can be <code>()</code> and then there won't be a <code>read</code> method.</li>
+</ul>
+<p>If that doesn't make sense right away that's okay.
+When I first came up with the design it took me about 5 minutes to let it sink in that Rust would let me do it like this.
+But, once you've understood it, I think it's a pretty great way to ensure the correct access is happening using the type system instead of runtime checks.</p>
+<p>We can pull the same trick with <code>write</code> as well, using our <code>W</code> parameter:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, R&gt; VolAddress&lt;T, R, Safe&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub fn write(self, t: T) {
+    unsafe { (self.address.get() as *mut T).write_volatile(t) }
+  }
+}
+
+impl&lt;T, R&gt; VolAddress&lt;T, R, Unsafe&gt;
+where
+  T: Copy,
+{
+  #[inline]
+  pub unsafe fn write(self, t: T) {
+    (self.address.get() as *mut T).write_volatile(t)
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The last thing we'll define right now is converting between <code>usize</code> values and <code>VolAddress</code> values:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T, R, W&gt; VolAddress&lt;T, R, W&gt; where T: Copy {
+  #[inline]
+  #[must_use]
+  pub const unsafe fn new(address: usize) -&gt; Self {
+    assert!(address != 0);
+    Self {
+      address: NonZeroUsize::new_unchecked(address),
+      target: PhantomData,
+      read_status: PhantomData,
+      write_status: PhantomData
+    }
+  }
+
+  #[inline]
+  #[must_use]
+  pub const fn as_usize(self) -&gt; usize {
+    self.address.get()
+  }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="defining-an-mmio-address"><a class="header" href="#defining-an-mmio-address">Defining An MMIO Address</a></h2>
+<p>Now that we've got a basic working <code>VolAddress</code> type let's put it to use.
+The two addresses we've seen so far are the backdrop color and the display control.
+Defining the display control would involve a lot of bitwise ops stuff, so we'll put that off for later.</p>
+<p>Let's handle the backdrop address by first defining a type for colors.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: color.rs
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Color(pub u16);
+<span class="boring">}</span></code></pre></pre>
+<p>Any time we define a type for use with MMIO, we want to be sure it's a <code>#[repr(transparent)]</code> wrapper around one of the 1, 2, or 4 byte int types (<code>u8</code>, <code>i8</code>, <code>u16</code>, <code>i16</code>, <code>u32</code>, or <code>i32</code>).
+That way the actual memory access can always happen as a single instruction.
+If a type's size doesn't allow it to be accessed from memory as a single instruction then the compiler is free to just &quot;do its best&quot;.
+The code will do some instruction sequence that eventually gets a value, but with MMIO we want to have high confidence about exactly what's going on.
+That's why we're sticking to only wrapping the native int types with our MMIO types.</p>
+<p>Anyway, a <code>Color</code> is 5 bits per channel, and any bit pattern is valid, so we can make the field be <code>pub</code>.
+We could have all sorts of other methods, but just the base definition is sufficient to define our backdrop address.
+Let's try to keep our MMIO definitions in a single file if we can.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: mmio.rs
+
+pub const BACKDROP_COLOR: VolAddress&lt;Color, Safe, Safe&gt; = unsafe { VolAddress::new(0x0500_0000) };
+<span class="boring">}</span></code></pre></pre>
+<p>And since we're starting to have a lot of modules let's make a prelude for our library.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// New library module: prelude.rs
+
+pub use crate::color::*;
+pub use crate::mmio::*;
+pub use crate::voladdress::*;
+<span class="boring">}</span></code></pre></pre>
+<p>So hopefully our examples can just import the library prelude, instead of importing all sorts of individual little types.
+Because we're gonna have a lot of types as we go.</p>
+<p>And every time we add one of these library modules we need to update the parent module, which is <code>lib.rs</code> in this case</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in lib.rs
+pub mod voladdress;
+pub mod color;
+pub mod mmio;
+pub mod prelude;
+<span class="boring">}</span></code></pre></pre>
+<p>From now on when there's new module files remember to declare the module in the parent, even if I don't say that part.</p>
+<p>Okay, now that everything is all set in the library, we can make a new <code>min3.rs</code> example.</p>
+<pre><pre class="playground"><code class="language-rust">// New Example: min3.rs
+#![no_std]
+#![no_main]
+
+use gba_from_scratch_rs::prelude::*;
+
+#[no_mangle]
+extern &quot;C&quot; fn main() -&gt; ! {
+  BACKDROP_COLOR.write(Color(0b11111));
+  
+  unsafe {
+    (0x0400_0000 as *mut u16).write_volatile(0);
+  }
+  loop {}
+}
+
+#[panic_handler]
+fn handle_panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
+  loop {}
+}</code></pre></pre>
+<p>And this new example... turns the screen red.
+Exactly the same as the last example.
+It might seem like we said a lot and didn't accomplish much, but we've moved part of the program out of the <code>unsafe</code> block.
+It's always worth it when you can learn a bit and then move code out of an <code>unsafe</code> block and over to the safe portion of the program.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../initial-setup/calling-main.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../initial-setup/calling-main.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </body>
+</html>
