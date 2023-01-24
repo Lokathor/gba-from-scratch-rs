@@ -1,6 +1,11 @@
 #![no_std]
 #![feature(naked_functions)]
 
+pub mod voladdress;
+pub mod color;
+pub mod mmio;
+pub mod prelude;
+
 #[naked]
 #[no_mangle]
 #[instruction_set(arm::a32)]

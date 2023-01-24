@@ -99,6 +99,7 @@ Also like with `__start`, the return type of `main` will be `-> !`, because we s
 The actual code in the body of `main` is two volatile writes.
 These are to Memory-mapped IO (MMIO) addresses, which are how the CPU controls the rest of the hardware.
 Most of learning to use the GBA well boils down to learning what all the MMIO controls allow for.
+We'll go over the "volatile" part in the next lesson, but it is necessary to use a volatile write and not a normal write.
 
 The first `write_volatile` call sets the color of the backdrop, the color that's shown for a pixel when nothing else is shown there.
 Color values on the GBA are 5 bits per channel, red as the lowest bits, then green, then blue.
