@@ -1,10 +1,11 @@
 #![no_std]
 #![feature(naked_functions)]
 
-pub mod voladdress;
 pub mod color;
+pub mod display_control;
 pub mod mmio;
 pub mod prelude;
+pub mod voladdress;
 
 #[naked]
 #[no_mangle]
