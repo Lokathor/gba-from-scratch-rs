@@ -3,7 +3,7 @@
 
 Welcome to _GBA From Scratch With Rust_.
 
-It's a book about programming for the Game Boy Advance using the Rust programming langauge.
+It's a book about programming for the Game Boy Advance using the Rust programming language.
 Particularly, everything will be as "from scratch" as possible.
 This means that we'll use the `core` part of the standard library,
 but for all other code it'll be stuff we've covered how to make in the book.
